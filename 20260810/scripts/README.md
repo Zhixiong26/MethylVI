@@ -58,6 +58,16 @@ NR05       NR
 
 实际文件可用 TSV 或 CSV。注释文件 `MVI_ANNOTATION` 可留空；如使用，至少需要 `cell_id`，并可增加 `sample_id`、`condition`、`cell_type` 及真实技术批次列。若同时提供 sample metadata，`condition` 以 sample metadata 为准。
 
+## 服务器验证记录
+
+截至 2026-08-10，服务器上的脚本工作目录已经确认。服务器上的 MethSCAn 数据根目录也已确认，但具体路径不在公开 README 中记录。
+
+已确认 10 个样本目录全部存在，`cov_dedup_probability` 中约有 5.85 万个细胞文件，IR 和 NR 两组均包含 5 个样本。
+
+当前服务器上尚未发现 H5AD、H5MU 或 ALLC 文件，只有按样本分目录保存的 `.cov.gz`。因此不能直接运行 `verify`、`build` 或 `train`。现有 `mvi_03_allcools_prepare_5kb_counts.sbatch` 目前要求输入为平铺的 cov 目录，后续必须先增加“10 个样本目录合并、cell ID 添加样本前缀、避免 barcode 冲突”的处理，再生成 ALLC、MCDS 和 5-kb H5AD。
+
+服务器运行结果、脱敏后的核查结论和后续修正应持续补充到本节；具体路径仅在服务器上的配置文件中维护。
+
 ## 与当前 MethSCAn 上游数据的对应关系
 
 已检查 `/Users/luozhixiong/Library/Mobile Documents/com~apple~CloudDocs/Documents/PHD/脚本/Methscan/01_Upstream` 中的工作流说明和 `Report.md`。其中明确的样本目录名为：
