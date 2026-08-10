@@ -1,0 +1,29 @@
+# macOS / editor files
+.DS_Store
+*.swp
+*.swo
+
+# Python cache and local test artefacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Pipeline logs and generated results
+logs/
+**/logs/
+results/
+**/results/
+methylVI_results/
+count_rows/
+build_work/
+*.h5ad
+*.h5mu
+*.mcds
+*.npz
+*.npy
+*.tsv.gz
+*.csv.gz
+
+# Archives and extracted legacy copies
+*.zip
+yuanpei/reproducible_methylVI_pipeline/
