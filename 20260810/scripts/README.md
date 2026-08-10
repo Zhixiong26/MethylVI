@@ -64,7 +64,7 @@ NR05       NR
 
 已确认 10 个样本目录全部存在，`cov_dedup_probability` 中约有 5.85 万个细胞文件，IR 和 NR 两组均包含 5 个样本。
 
-当前服务器上尚未发现 H5AD、H5MU 或 ALLC 文件，只有按样本分目录保存的 `.cov.gz`。因此不能直接运行 `verify`、`build` 或 `train`。现有 `mvi_03_allcools_prepare_5kb_counts.sbatch` 目前要求输入为平铺的 cov 目录，后续必须先增加“10 个样本目录合并、cell ID 添加样本前缀、避免 barcode 冲突”的处理，再生成 ALLC、MCDS 和 5-kb H5AD。
+当前服务器上尚未发现 H5AD、H5MU 或 ALLC 文件，只有按样本分目录保存的 `.cov.gz`。因此不能直接运行 `verify`、`build` 或 `train`。`mvi_03_allcools_prepare_5kb_counts.sbatch` 已更新为同时支持平铺 cov 目录和嵌套的 `*_Met/cov_dedup_probability` 目录，并会自动为嵌套输入添加样本前缀、检查 cell ID 冲突，再生成 ALLC、MCDS 和 5-kb H5AD。
 
 服务器运行结果、脱敏后的核查结论和后续修正应持续补充到本节；具体路径仅在服务器上的配置文件中维护。
 
@@ -96,6 +96,8 @@ sbatch mvi_03_allcools_prepare_5kb_counts.sbatch \
   /path/to/allcools_5kb_ir_nr \
   /path/to/hg38.chrom.sizes
 ```
+
+如果 cov 按 10 个样本分别放在 `*_Met/cov_dedup_probability` 下，也可以直接把包含这些样本目录的数据根目录作为第一个参数；脚本会在输出目录下建立 `staged_cov/` 软链接，并把 cell ID 规范为 `IR01__barcode` 或 `NR01__barcode`。
 
 可选的 ALLCools 上游步骤使用参数或环境变量提供路径，不含任何旧项目固定路径：
 
