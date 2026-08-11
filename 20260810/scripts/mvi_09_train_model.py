@@ -16,9 +16,9 @@ import pandas as pd
 import scanpy as sc
 import scvi
 import torch
-from methyl_vi.model import MethylVI
+from scvi.external import METHYLVI
 
-from mvi_14_utils_pipeline import env_path, save_json
+from mvi_13_utils_pipeline import env_path, save_json
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,7 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--neighbors", type=int, default=int(os.environ.get("MVI_NEIGHBORS", "15")))
     parser.add_argument("--resolution", type=float, default=float(os.environ.get("MVI_LEIDEN_RESOLUTION", "1.0")))
     parser.add_argument("--likelihood", choices=("betabinomial", "binomial"), default="betabinomial")
-    parser.add_argument("--dispersion", choices=("gene", "gene-cell"), default="gene")
+    parser.add_argument("--dispersion", choices=("region", "region-cell"), default="region")
     parser.add_argument("--accelerator", choices=("auto", "cpu", "gpu"), default=os.environ.get("MVI_ACCELERATOR", "auto"))
     return parser.parse_args()
 
@@ -52,7 +52,7 @@ def _validate_counts(mdata: mudata.MuData, chunk_size: int = 128) -> None:
             raise ValueError("mc/cov layers must use integer count dtypes")
 
 
-def _write_history(model: MethylVI, output) -> int:
+def _write_history(model: METHYLVI, output) -> int:
     frames = []
     for metric, values in model.history.items():
         frame = values.copy()
@@ -102,15 +102,15 @@ def main() -> None:
         results / "sample_by_condition.csv"
     )
 
-    MethylVI.setup_mudata(
+    METHYLVI.setup_mudata(
         mdata,
         mc_layer="mc",
         cov_layer="cov",
         batch_key=batch_key,
-        methylation_modalities={"mCG": "mCG"},
-        covariate_modalities={"batch_key": "mCG"},
+        methylation_contexts=["mCG"],
+        modalities={"batch_key": "mCG"},
     )
-    model = MethylVI(
+    model = METHYLVI(
         mdata,
         n_latent=args.n_latent,
         n_hidden=args.n_hidden,
@@ -181,7 +181,7 @@ def main() -> None:
     coordinates.to_csv(results / "cell_annotations_umap.tsv.gz", sep="\t")
 
     versions = {}
-    for package in ("methyl-vi", "scvi-tools", "torch", "anndata", "mudata", "scanpy"):
+    for package in ("scvi-tools", "torch", "anndata", "mudata", "scanpy"):
         try:
             versions[package] = importlib.metadata.version(package)
         except importlib.metadata.PackageNotFoundError:

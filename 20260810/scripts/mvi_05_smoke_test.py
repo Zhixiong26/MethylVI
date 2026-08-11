@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fast synthetic check of the pinned MethylVI/scvi-tools API."""
+"""使用合成数据快速检查固定版本的 MethylVI/scvi-tools API。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import anndata as ad
 import mudata
 import numpy as np
 import pandas as pd
-from methyl_vi.model import MethylVI
+from scvi.external import METHYLVI
 
 
 def main() -> None:
@@ -27,15 +27,15 @@ def main() -> None:
     adata.layers["mc"] = mc
     adata.layers["cov"] = cov
     mdata = mudata.MuData({"mCG": adata})
-    MethylVI.setup_mudata(
+    METHYLVI.setup_mudata(
         mdata,
         mc_layer="mc",
         cov_layer="cov",
         batch_key="sample_id",
-        methylation_modalities={"mCG": "mCG"},
-        covariate_modalities={"batch_key": "mCG"},
+        methylation_contexts=["mCG"],
+        modalities={"batch_key": "mCG"},
     )
-    model = MethylVI(mdata, n_latent=4, n_hidden=16, n_layers=1)
+    model = METHYLVI(mdata, n_latent=4, n_hidden=16, n_layers=1)
     model.train(
         max_epochs=2,
         batch_size=16,

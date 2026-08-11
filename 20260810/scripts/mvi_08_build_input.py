@@ -15,7 +15,7 @@ import anndata as ad
 import mudata
 import numpy as np
 
-from mvi_14_utils_pipeline import (
+from mvi_13_utils_pipeline import (
     aggregate_allc,
     canonical_cell_id,
     checkpoint_path,
@@ -222,7 +222,6 @@ def main() -> None:
     annotations, annotation_stats = load_annotations(
         cells, annotation, sample_metadata, sample_id_regex
     )
-
     tasks = []
     row_paths = []
     for row_index, cell_id in enumerate(cells):

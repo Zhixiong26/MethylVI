@@ -26,7 +26,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="ALLCools mCG 5-kb consensus clustering")
     p.add_argument("--mcds", required=True)
     p.add_argument("--output", required=True)
-    p.add_argument("--threads", type=int, default=50)
+    p.add_argument("--threads", type=int, default=32)
     return p.parse_args()
 
 
@@ -34,6 +34,16 @@ def main():
     args = parse_args()
     out = Path(args.output).resolve()
     out.mkdir(parents=True, exist_ok=True)
+    project_figures = Path(
+        os.environ.get("MVI_FIGURES_DIR", str(out / "result"))
+    ).expanduser()
+    figures = Path(
+        os.environ.get(
+            "MVI_FIGURES_BEFORE_DIR",
+            str(project_figures / "01_before_methylvi"),
+        )
+    ).expanduser().resolve()
+    figures.mkdir(parents=True, exist_ok=True)
     warnings.filterwarnings("ignore", category=FutureWarning)
 
     print(f"Opening {args.mcds}", flush=True)
@@ -82,7 +92,11 @@ def main():
             adata, basis=basis, color=["L1", "L1_proba"],
             show=False, wspace=0.35,
         )
-        plt.savefig(out / f"{basis}.L1.png", dpi=300, bbox_inches="tight")
+        plt.savefig(
+            figures / f"allcools_5kb_{basis}_L1.png",
+            dpi=300,
+            bbox_inches="tight",
+        )
         plt.close("all")
     print("ALLCools mCG-5kb clustering completed", flush=True)
 

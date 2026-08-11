@@ -5,19 +5,20 @@ from __future__ import annotations
 
 import pandas as pd
 
-from mvi_14_utils_pipeline import env_path
-from mvi_15_utils_plot import categorical_embedding_plot
+from mvi_13_utils_pipeline import env_path
+from mvi_14_utils_plot import categorical_embedding_plot
 
 
 def main() -> None:
     results = env_path("MVI_RESULTS")
+    figures = env_path("MVI_FIGURES_AFTER_DIR")
     table = pd.read_csv(results / "cell_annotations_umap.tsv.gz", sep="\t", index_col=0)
     categorical_embedding_plot(
         table,
         "UMAP1",
         "UMAP2",
         "condition",
-        results / "methylvi_umap_condition.pdf",
+        figures / "methylvi_umap_condition.pdf",
         "MethylVI UMAP — condition (IR/NR)",
     )
 

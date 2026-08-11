@@ -1,0 +1,27 @@
+# MethylVI服务器环境（2026-08-11验收）。
+# MethylVI由scvi-tools内置，通过scvi.external.METHYLVI导入；不存在必须
+# 另行安装的methyl-vi包。应使用conda/mamba选择匹配aarch64平台的PyTorch。
+scvi-tools==1.3.3
+torch==2.12.1  # 运行时报告2.12.1+cu130；当前节点CUDA不可用
+anndata==0.11.4
+mudata==0.3.2
+scanpy==1.11.5
+umap-learn==0.5.9.post2
+numpy==2.2.6
+pandas==2.3.3
+scipy==1.15.2
+matplotlib==3.10.7
+leidenalg==0.11.0
+h5py==3.14.0
+
+# 当前环境的Torch依赖nvidia-cusparselt-cu13==0.8.1，但pip check报告该包
+# 不支持linux-aarch64。METHYLVI类仍可导入；在完成CPU smoke test前不擅自卸载。
+
+# ALLCools 上游环境（服务器验收于 2026-08-10）。
+# 环境路径：/share/home/rzli/miniconda3/envs/allcools
+# Python 3.8 需要将 Scanpy 固定为 1.9.8；1.10.2 会在导入时报语法错误。
+ALLCools==1.1.1
+anndata==0.9.2
+scanpy==1.9.8
+numpy==1.24.4
+pandas==1.5.3

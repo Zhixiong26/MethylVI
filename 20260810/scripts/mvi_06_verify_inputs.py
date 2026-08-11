@@ -8,7 +8,7 @@ import os
 
 import anndata as ad
 
-from mvi_14_utils_pipeline import (
+from mvi_13_utils_pipeline import (
     canonical_cell_id,
     env_path,
     index_allc_files,
@@ -96,7 +96,10 @@ def main() -> None:
         "missing_allc_examples": missing_allc[:10],
         "extra_allc_count": int(len(extra_allc)),
         "extra_allc_examples": extra_allc[:10],
-        "id_normalization": "replace only the first sample/barcode '-' delimiter with '_'",
+        "id_normalization": (
+            "normalize SCANPY IR01_<barcode>, ALLCools IR01__<barcode>, "
+            "and 25110891_IR01_Met__<barcode> to IR01__<barcode>"
+        ),
         "bin_size": args.bin_size,
         "methylation_context": os.environ.get("MVI_MC_CONTEXT", "CGN"),
         "projected_dense_uint16_mc_cov_gib": round(
@@ -105,8 +108,11 @@ def main() -> None:
     }
     save_json(output, audit)
     print(output.read_text(), end="")
+    adata.file.close()
     if missing_allc:
         raise ValueError(f"Input audit failed: {len(missing_allc)} selected cells lack ALLC files")
+    if extra_allc:
+        raise ValueError(f"Input audit failed: ALLC directory contains {len(extra_allc)} extra cells")
     if audit["unknown_sample_cells"] or audit["unknown_condition_cells"]:
         raise ValueError("Input audit failed: selected cells have unknown sample_id or condition")
     if missing_sample_ids:

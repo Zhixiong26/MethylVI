@@ -23,8 +23,16 @@ def env_path(name: str, default: str | None = None) -> Path:
 
 
 def canonical_cell_id(value: object) -> str:
-    """Normalize only the first sample/barcode '-' delimiter to an underscore."""
-    return re.sub(r"^([^-_]+)-", r"\1_", str(value))
+    """将当前项目中的多种 sample/barcode 写法统一为 ``IR01__barcode``。"""
+    text = str(value).strip()
+    project_match = re.match(
+        r"^(?:25110891_)?((?:IR|NR)[0-9]{2})(?:_Met)?(?:__|_|-)(.+)$",
+        text,
+    )
+    if project_match:
+        return f"{project_match.group(1)}__{project_match.group(2)}"
+    # 保留对其他数据集历史 ``sample-barcode`` 格式的兼容。
+    return re.sub(r"^([^-_]+)-", r"\1_", text)
 
 
 def infer_sample_id(cell_id: object, sample_id_regex: str = r"^([^_]+_[^_]+)_") -> str:
@@ -125,6 +133,16 @@ def load_annotations(
     if "cell_id" not in annotation.columns:
         raise ValueError(f"Annotation file lacks required 'cell_id' column: {annotation_path}")
     annotation = annotation.copy()
+    # SCANPY/20260810 的官方导出列名与 MethylVI 内部列名不同。
+    # 仅在标准列不存在时创建别名，同时保留原列用于追溯。
+    aliases = {
+        "sample": "sample_id",
+        "group": "condition",
+        "cell_type_integrated": "cell_type",
+    }
+    for source_column, target_column in aliases.items():
+        if target_column not in annotation.columns and source_column in annotation.columns:
+            annotation[target_column] = annotation[source_column]
     for column in annotation.columns:
         if column not in {"cell_id", "match_id"} and column not in output.columns:
             output[column] = "Unknown"
@@ -144,9 +162,12 @@ def load_annotations(
 
     for column in (column for column in annotation.columns if column not in {"cell_id", "match_id"}):
         if column in annotation.columns:
-            values = annotation.loc[matched_ids, column].fillna("").astype(str).to_numpy()
+            values_series = annotation.loc[matched_ids, column].fillna("").astype(str)
             if column == "condition":
-                values = np.char.upper(values)
+                # 先在 Pandas 字符串列上转大写，避免 NumPy 2.x 的
+                # np.char.upper 拒绝 object dtype 数组。
+                values_series = values_series.str.upper()
+            values = values_series.to_numpy(dtype=str)
             keep = values != ""
             output.loc[matched_cells[keep], column] = values[keep]
 
@@ -156,6 +177,16 @@ def load_annotations(
     stats = {
         "annotation_rows": int(len(annotation)),
         "fully_annotated_selected_cells": int(matched.sum()),
+        "annotation_unmatched_selected_cells": int((~matched).sum()),
+        "annotation_match_rate": float(matched.mean()),
+        "cell_type_annotated_selected_cells": int(
+            output["cell_type"].ne("Unannotated").sum()
+        ),
+        "cell_type_counts": {
+            str(key): int(value)
+            for key, value in output["cell_type"].value_counts().items()
+        },
+        "cell_type_source": str(annotation_path),
         "sample_id_prefix_inferred_cells": int((~matched).sum()),
         "sample_metadata_rows": int(len(sample_metadata)) if sample_metadata is not None else 0,
         "sample_ids_detected": int(output["sample_id"].nunique()),
@@ -163,6 +194,16 @@ def load_annotations(
         "unknown_condition_cells": int((output["condition"] == "Unknown").sum()),
         "condition_counts": output["condition"].value_counts().to_dict(),
     }
+    if "exclude_from_main_analysis" in output.columns:
+        excluded = (
+            output["exclude_from_main_analysis"]
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .isin({"true", "1", "yes"})
+        )
+        stats["scanpy_excluded_selected_cells"] = int(excluded.sum())
+        stats["scanpy_retained_selected_cells"] = int(matched.sum() - excluded.sum())
     return output, stats
 
 

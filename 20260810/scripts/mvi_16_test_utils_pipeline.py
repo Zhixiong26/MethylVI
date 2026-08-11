@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from mvi_14_utils_pipeline import (
+from mvi_13_utils_pipeline import (
     aggregate_allc,
     canonical_cell_id,
     infer_sample_id,
@@ -22,6 +22,15 @@ class PipelineUtilsTests(unittest.TestCase):
     def test_canonical_cell_id_only_changes_first_delimiter(self):
         self.assertEqual(canonical_cell_id("D01-AA-BB"), "D01_AA-BB")
         self.assertEqual(canonical_cell_id("D01_AA-BB"), "D01_AA-BB")
+
+    def test_scanpy_and_allcools_cell_ids_match(self):
+        expected = "IR01__AAAGAAGAAGAGGAGAG"
+        self.assertEqual(canonical_cell_id("IR01_AAAGAAGAAGAGGAGAG"), expected)
+        self.assertEqual(canonical_cell_id("IR01__AAAGAAGAAGAGGAGAG"), expected)
+        self.assertEqual(
+            canonical_cell_id("25110891_IR01_Met__AAAGAAGAAGAGGAGAG"),
+            expected,
+        )
 
     def test_methscan_sample_id_regex(self):
         pattern = r"^(?:[^_]+_)?((?:IR|NR)[0-9][0-9])(?:_Met)?(?:__|_)"
@@ -69,6 +78,28 @@ class PipelineUtilsTests(unittest.TestCase):
             self.assertEqual(annotations["sample_id"].tolist(), ["IR_01", "NR_01"])
             self.assertEqual(annotations["condition"].tolist(), ["IR", "NR"])
             self.assertEqual(stats["sample_metadata_rows"], 2)
+
+    def test_scanpy_annotation_column_aliases(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            metadata_path = root / "sample_metadata.tsv"
+            metadata_path.write_text("sample_id\tcondition\nIR01\tIR\n")
+            annotation_path = root / "scanpy_annotation.csv"
+            annotation_path.write_text(
+                "cell_id,sample,group,cell_type_integrated\n"
+                "IR01_AAAC,IR01,IR,T_cell\n"
+            )
+            annotations, stats = load_annotations(
+                ["IR01__AAAC"],
+                annotation_path,
+                metadata_path,
+                r"^((?:IR|NR)[0-9]{2})(?:__|_)",
+            )
+            self.assertEqual(annotations.loc["IR01__AAAC", "sample_id"], "IR01")
+            self.assertEqual(annotations.loc["IR01__AAAC", "condition"], "IR")
+            self.assertEqual(annotations.loc["IR01__AAAC", "cell_type"], "T_cell")
+            self.assertEqual(stats["fully_annotated_selected_cells"], 1)
+            self.assertEqual(stats["cell_type_annotated_selected_cells"], 1)
 
 
 if __name__ == "__main__":
