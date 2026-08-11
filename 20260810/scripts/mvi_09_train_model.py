@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.metadata
+import importlib.util
 import json
 import os
 import platform
@@ -19,6 +20,21 @@ import torch
 from scvi.external import METHYLVI
 
 from mvi_13_utils_pipeline import env_path, save_json
+
+
+def _validate_clustering_dependencies() -> None:
+    """在读取大型H5MU和训练前检查Leiden依赖，避免训练完成后才失败。"""
+    missing = [
+        package
+        for package in ("igraph", "leidenalg")
+        if importlib.util.find_spec(package) is None
+    ]
+    if missing:
+        raise RuntimeError(
+            "MethylVI训练后Leiden聚类缺少Python依赖: "
+            + ", ".join(missing)
+            + "。请先在MVI_CONDA_ENV中安装并通过导入检查。"
+        )
 
 
 def parse_args() -> argparse.Namespace:
@@ -67,6 +83,7 @@ def _write_history(model: METHYLVI, output) -> int:
 
 def main() -> None:
     args = parse_args()
+    _validate_clustering_dependencies()
     input_path = env_path("MVI_INPUT")
     results = env_path("MVI_RESULTS")
     results.mkdir(parents=True, exist_ok=True)

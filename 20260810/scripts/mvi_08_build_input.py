@@ -272,8 +272,11 @@ def main() -> None:
     var["start"] = regions["start"].to_numpy()
     var["end"] = regions["end"].to_numpy()
     count_adata = ad.AnnData(X=None, obs=obs, var=var)
-    count_adata.layers["mc"] = mc
-    count_adata.layers["cov"] = cov
+    # AnnData 可以在内存中持有 np.memmap，但当前 anndata I/O 注册器
+    # 没有为 np.memmap 子类注册 HDF5 写入方法。np.asarray 只创建
+    # 标准 ndarray 视图，不复制底层的5.35 GiB计数数据。
+    count_adata.layers["mc"] = np.asarray(mc)
+    count_adata.layers["cov"] = np.asarray(cov)
     mdata = mudata.MuData({"mCG": count_adata})
 
     output.parent.mkdir(parents=True, exist_ok=True)

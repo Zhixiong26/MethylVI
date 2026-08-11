@@ -11,11 +11,13 @@ numpy==2.2.6
 pandas==2.3.3
 scipy==1.15.2
 matplotlib==3.10.7
-leidenalg==0.11.0
+igraph==1.0.0
+leidenalg==0.12.0
+texttable==1.7.0  # igraph的运行依赖
 h5py==3.14.0
 
 # 当前环境的Torch依赖nvidia-cusparselt-cu13==0.8.1，但pip check报告该包
-# 不支持linux-aarch64。METHYLVI类仍可导入；在完成CPU smoke test前不擅自卸载。
+# 不支持linux-aarch64。CPU smoke test及真实数据1轮训练均已完成，暂不卸载该依赖。
 
 # ALLCools 上游环境（服务器验收于 2026-08-10）。
 # 环境路径：/share/home/rzli/miniconda3/envs/allcools
