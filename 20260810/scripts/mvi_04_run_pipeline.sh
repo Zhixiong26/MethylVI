@@ -29,7 +29,7 @@ export MPLBACKEND=Agg
 mkdir -p "$HERE/logs" "$MVI_ROOT" "$MVI_RESULTS"
 
 usage() {
-    echo "Usage: bash mvi_04_run_pipeline.sh {verify|smoke|original-sample|build|train|plots|all}"
+    echo "Usage: bash mvi_04_run_pipeline.sh {verify|smoke|original-sample|build|train|plots|supervised|all}"
 }
 
 stage=${1:-}
@@ -60,6 +60,11 @@ case "$stage" in
     python "$HERE/mvi_11_plot_condition.py" \
       2>&1 | tee "$HERE/logs/mvi_11_plot_condition.log"
     ;;
+  supervised)
+    NUMBA_NUM_THREADS="$MVI_THREADS" python "$HERE/mvi_17_plot_supervised_umap.py" \
+      --threads "$MVI_THREADS" \
+      2>&1 | tee "$HERE/logs/mvi_17_plot_supervised_umap.log"
+    ;;
   all)
     bash "$0" verify
     bash "$0" smoke
@@ -67,6 +72,7 @@ case "$stage" in
     bash "$0" build
     bash "$0" train
     bash "$0" plots
+    bash "$0" supervised
     ;;
   *) usage; exit 2 ;;
 esac

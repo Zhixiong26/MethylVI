@@ -38,7 +38,7 @@ export MVI_ALLC_DIR="${MVI_ALLC_DIR:-${MVI_ALLCOOLS_OUTPUT}/input_allc}"
 
 # SCANPY 导出的全细胞注释表。公共读取器会将其 sample、group 和
 # cell_type_integrated 标准化为 sample_id、condition 和 cell_type。
-export MVI_ANNOTATION="${MVI_ANNOTATION:-/share/home/rzli/SCANPY/20260714/result/annotation/02_cell_annotation_all_cells.csv}"
+export MVI_ANNOTATION="${MVI_ANNOTATION:-/share/home/rzli/SCANPY/20260810/Result0810/annotation/02_cell_annotation_all_cells.csv}"
 
 # 10 个样本的 sample_id/condition 元数据表。
 export MVI_SAMPLE_METADATA="${MVI_SAMPLE_METADATA:-${MVI_REPRO}/mvi_01_sample_metadata.tsv}"
@@ -59,9 +59,10 @@ export MVI_RESULTS="${MVI_RESULTS:-${MVI_ROOT}/results_ir_nr}"
 # 所有图像的统一输出目录；与 scripts 并列，不写入数据目录。
 export MVI_FIGURES_DIR="${MVI_FIGURES_DIR:-${MVI_PROJECT_ROOT}/result}"
 
-# 按分析阶段区分校正前和校正后图像。
+# 按分析阶段区分校正前、校正后和监督式UMAP图像。
 export MVI_FIGURES_BEFORE_DIR="${MVI_FIGURES_BEFORE_DIR:-${MVI_FIGURES_DIR}/01_before_methylvi}"
 export MVI_FIGURES_AFTER_DIR="${MVI_FIGURES_AFTER_DIR:-${MVI_FIGURES_DIR}/02_after_methylvi}"
+export MVI_FIGURES_SUPERVISED_DIR="${MVI_FIGURES_SUPERVISED_DIR:-${MVI_FIGURES_DIR}/03_supervised_umap}"
 
 # 输入审计 JSON 报告；编号与生成它的06脚本对应。
 export MVI_AUDIT="${MVI_AUDIT:-${MVI_REPRO}/mvi_06_input_audit.json}"
@@ -146,3 +147,9 @@ export MVI_N_LAYERS="${MVI_N_LAYERS:-1}"
 # latent 空间下游分析：邻居数和 Leiden 聚类分辨率。
 export MVI_NEIGHBORS="${MVI_NEIGHBORS:-15}"
 export MVI_LEIDEN_RESOLUTION="${MVI_LEIDEN_RESOLUTION:-1.0}"
+
+# 可选的cell type标签引导UMAP。这一步只重算UMAP，
+# 不重新训练MethylVI，也不改变已保存的无监督UMAP。
+export MVI_SUPERVISED_TARGET_KEY="${MVI_SUPERVISED_TARGET_KEY:-cell_type}"
+export MVI_SUPERVISED_TARGET_WEIGHTS="${MVI_SUPERVISED_TARGET_WEIGHTS:-0.2 0.5 0.7 0.9}"
+export MVI_SUPERVISED_MIN_DIST="${MVI_SUPERVISED_MIN_DIST:-0.5}"
