@@ -3,7 +3,7 @@
 # ============================================================================
 # MethylVI 项目统一配置文件
 #
-# 入口脚本 mvi_04_run_pipeline.sh 会自动加载本文件。
+# 入口脚本 09_run_pipeline.sh 会自动加载本文件。
 # 如需更换数据集，可在加载本文件前覆盖对应的 MVI_* 环境变量。
 # ============================================================================
 
@@ -41,7 +41,7 @@ export MVI_ALLC_DIR="${MVI_ALLC_DIR:-${MVI_ALLCOOLS_OUTPUT}/input_allc}"
 export MVI_ANNOTATION="${MVI_ANNOTATION:-/share/home/rzli/SCANPY/20260810/Result0810/annotation/02_cell_annotation_all_cells.csv}"
 
 # 10 个样本的 sample_id/condition 元数据表。
-export MVI_SAMPLE_METADATA="${MVI_SAMPLE_METADATA:-${MVI_REPRO}/mvi_01_sample_metadata.tsv}"
+export MVI_SAMPLE_METADATA="${MVI_SAMPLE_METADATA:-${MVI_REPRO}/01_sample_metadata.tsv}"
 
 # ----------------------------------------------------------------------------
 # 2. 输出路径
@@ -64,7 +64,7 @@ export MVI_FIGURES_BEFORE_DIR="${MVI_FIGURES_BEFORE_DIR:-${MVI_FIGURES_DIR}/01_b
 export MVI_FIGURES_AFTER_DIR="${MVI_FIGURES_AFTER_DIR:-${MVI_FIGURES_DIR}/02_after_methylvi}"
 export MVI_FIGURES_SUPERVISED_DIR="${MVI_FIGURES_SUPERVISED_DIR:-${MVI_FIGURES_DIR}/03_supervised_umap}"
 
-# 输入审计 JSON 报告；编号与生成它的06脚本对应。
+# 输入审计 JSON 报告；保留既有文件名以兼容已生成结果。
 export MVI_AUDIT="${MVI_AUDIT:-${MVI_REPRO}/mvi_06_input_audit.json}"
 
 # ----------------------------------------------------------------------------

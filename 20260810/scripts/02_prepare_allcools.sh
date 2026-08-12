@@ -447,7 +447,7 @@ else
     echo "[$(date)] existing completed MCDS detected; skipping generation"
 fi
 
-"$PYTHON_BIN" "$SCRIPT_DIR/mvi_03_allcools_cluster_5kb.py" \
+"$PYTHON_BIN" "$SCRIPT_DIR/03_cluster_allcools.py" \
     --mcds "$MCDS" \
     --output "$OUTPUT" \
     --threads "$THREADS"

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import gzip
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import pandas as pd
 
-from mvi_13_utils_pipeline import (
+SCRIPT_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SCRIPT_DIR))
+
+from mvi_utils import (  # noqa: E402
     aggregate_allc,
     canonical_cell_id,
     infer_sample_id,
@@ -103,4 +107,4 @@ class PipelineUtilsTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)

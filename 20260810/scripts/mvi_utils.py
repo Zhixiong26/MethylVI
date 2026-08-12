@@ -13,6 +13,7 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def env_path(name: str, default: str | None = None) -> Path:
@@ -358,3 +359,55 @@ def save_json(path: Path, payload: object) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
     temporary.replace(path)
+
+
+def categorical_embedding_plot(
+    table: pd.DataFrame,
+    x: str,
+    y: str,
+    color: str,
+    output: Path,
+    title: str,
+    seed: int = 0,
+) -> None:
+    """绘制分类变量着色的二维嵌入图并保存为文件。"""
+    if color not in table:
+        raise ValueError(f"Missing plotting annotation: {color}")
+    data = table[[x, y, color]].copy()
+    data[color] = data[color].fillna("Unknown").astype(str)
+    categories = sorted(data[color].unique())
+    cmap = plt.get_cmap("tab20" if len(categories) <= 20 else "gist_ncar")
+    colors = {
+        category: cmap(index / max(1, len(categories) - 1))
+        for index, category in enumerate(categories)
+    }
+    data = data.iloc[np.random.default_rng(seed).permutation(len(data))]
+
+    width = 11 if len(categories) > 12 else 8
+    figure, axis = plt.subplots(figsize=(width, 7))
+    for category in categories:
+        subset = data[data[color] == category]
+        axis.scatter(
+            subset[x],
+            subset[y],
+            s=4,
+            alpha=0.75,
+            linewidths=0,
+            color=colors[category],
+            label=category,
+        )
+    axis.set(xlabel=x, ylabel=y, title=title)
+    axis.set_xticks([])
+    axis.set_yticks([])
+    axis.spines[:].set_visible(False)
+    axis.legend(
+        loc="center left",
+        bbox_to_anchor=(1.01, 0.5),
+        frameon=False,
+        markerscale=2.5,
+        fontsize=7,
+        ncol=2 if len(categories) > 20 else 1,
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output, bbox_inches="tight")
+    plt.close(figure)

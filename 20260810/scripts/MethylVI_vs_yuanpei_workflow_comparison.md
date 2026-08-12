@@ -38,14 +38,15 @@ ZIP包中的文件与已解压目录一致。
 
 ### 2.3 当前目录
 
-当前流程为`20260810/scripts/mvi_00`至`mvi_17`，其中：
+当前流程为`20260810/scripts/00_config.sh`至`09_run_pipeline.sh`，其中：
 
 - 02–03：ALLCools上游；
-- 06：输入审计；
-- 08：重建MethylVI `mc/cov`；
-- 09：训练MethylVI；
-- 10–11：校正后绘图；
-- 17：`target_weight=0.2/0.5/0.7/0.9`的cell type标签引导UMAP。
+- 04：输入审计；
+- 05：重建MethylVI `mc/cov`；
+- 06：训练MethylVI；
+- 07：统一绘制校正前和校正后普通图；
+- 08：`target_weight=0.2/0.5/0.7/0.9`的cell type标签引导UMAP；
+- 09：统一执行入口。
 
 ## 3. 一个必须说明的证据边界
 
@@ -65,7 +66,7 @@ results_donor_batch_corrected/method_1/run_supervised_umap.py
 - 可以根据README、参数、入口调用和已完成审计确认总体算法路线；
 - 可以确认build、train、plots和supervised等阶段确实存在；
 - 不能对`yuanpei`的02/03训练实现做逐行代码比较；
-- 不能在缺少源码时断言其likelihood、dispersion、内部API调用和当前09脚本逐行一致。
+- 不能在缺少源码时断言其likelihood、dispersion、内部API调用和当前`06_train_methylvi.py`逐行一致。
 
 本文会把“已由本地文件直接确认”和“根据入口/README确认”区分开，不把缺失源码部分写成已逐行验证。
 
@@ -147,7 +148,7 @@ cell type、sample、condition绘图
 | ALLC来源审计 | 有`input_audit.json`和ALLC映射检查 | 保存source manifest、selected-cell table、QC summary和校验信息 | 两者都审计，当前流程记录更细 |
 | MCDS quantifier | 上游脚本只生成`hypo-score CGN` | 同时生成`count CGN`与`hypo-score CGN` | 当前MCDS保留的上游信息更完整 |
 | ALLCools聚类 | LSI + ConsensusClustering | 同一算法和核心参数 | 该阶段本质相同 |
-| 校正前UMAP | ALLCools聚类阶段根据`X_pca`计算；01脚本只重新着色 | 03脚本根据`X_pca`计算；07脚本只重新着色 | 时机和用途相同 |
+| 校正前UMAP | ALLCools聚类阶段根据`X_pca`计算；其01脚本只重新着色 | `03_cluster_allcools.py`根据`X_pca`计算；`07_plot_embeddings.py --stage before`只重新着色 | 时机和用途相同 |
 | cell type注释 | 合并cell type、donor和disease注释 | 合并SCANPY cell type、sample和IR/NR注释 | 都用于解释和绘图，不作为核心MethylVI监督标签 |
 | MethylVI输入 | 从ALLC重建整数`mc/cov`并写入H5MU，约14 GB | 从ALLC重建整数`mc/cov`并写入H5MU，约1.03 GiB | 构建原则相同，数据规模不同 |
 | batch key | `donor` | `sample_id` | 都去除个体/样本差异；当前`sample_id`与IR/NR完全绑定，需警惕过校正 |
@@ -209,7 +210,7 @@ cov = 总覆盖计数
 
 ### 7.2 当前流程能逐行确认的实现
 
-当前08脚本会：
+当前`05_build_methylvi_input.py`会：
 
 1. 解析H5AD中的5-kb坐标；
 2. 为每个细胞匹配唯一ALLC；
@@ -291,7 +292,7 @@ scvi-tools==1.3.3
 
 ## 9. ALLCools上游比较
 
-当前`mvi_03_allcools_cluster_5kb.py`与`yuanpei/cluster_5kbin.py`可以逐行比较。除了默认线程数和图片输出位置外，算法参数一致：
+当前`03_cluster_allcools.py`与`yuanpei/cluster_5kbin.py`可以逐行比较。除了默认线程数和图片输出位置外，算法参数一致：
 
 | 环节 | 共同参数 |
 |---|---|
@@ -354,9 +355,9 @@ scvi-tools==1.3.3
 0.2, 0.5, 0.7, 0.9, 1.0
 ```
 
-这一步使用标签引导可视化，但README明确说它不是核心donor correction分析。当前流程现在也将它作为可选的17阶段，基于已训练的`X_methylVI`使用cell type标签和0.2、0.5、0.7、0.9四个权重重算UMAP。这些图必须标注为“监督式UMAP”，不应与09脚本产生的无监督MethylVI UMAP混淆。
+这一步使用标签引导可视化，但README明确说它不是核心donor correction分析。当前流程将它作为独立的`supervised`阶段，基于已训练的`X_methylVI`使用cell type标签和0.2、0.5、0.7、0.9四个权重重算UMAP。这些图必须标注为“监督式UMAP”，不应与`06_train_methylvi.py`产生的无监督MethylVI UMAP混淆。
 
-`yuanpei`的`run_supervised_umap.py`源码不在当前副本中，因此只能确认它接收0.2、0.5、0.7、0.9和1.0这些weights，不能证明其他UMAP参数与当前17脚本逐项相同。当前脚本已显式固定`n_neighbors=15`、`min_dist=0.5`、`metric=euclidean`、`target_metric=categorical`和`seed=0`。
+`yuanpei`的`run_supervised_umap.py`源码不在当前副本中，因此只能确认它接收0.2、0.5、0.7、0.9和1.0这些weights，不能证明其他UMAP参数与当前`08_plot_supervised_umap.py`逐项相同。当前脚本已显式固定`n_neighbors=15`、`min_dist=0.5`、`metric=euclidean`、`target_metric=categorical`和`seed=0`。
 
 ## 12. 两边结果能否直接比较
 

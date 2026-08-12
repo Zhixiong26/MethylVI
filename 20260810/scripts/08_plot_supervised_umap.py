@@ -12,8 +12,7 @@ import numpy as np
 import pandas as pd
 import umap
 
-from mvi_13_utils_pipeline import env_path, load_annotations, save_json
-from mvi_14_utils_plot import categorical_embedding_plot
+from mvi_utils import categorical_embedding_plot, env_path, load_annotations, save_json
 
 
 def _environment_weights() -> list[float]:

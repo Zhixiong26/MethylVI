@@ -15,7 +15,7 @@ import anndata as ad
 import mudata
 import numpy as np
 
-from mvi_13_utils_pipeline import (
+from mvi_utils import (
     aggregate_allc,
     canonical_cell_id,
     checkpoint_path,

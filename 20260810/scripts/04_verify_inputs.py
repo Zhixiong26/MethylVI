@@ -8,7 +8,7 @@ import os
 
 import anndata as ad
 
-from mvi_13_utils_pipeline import (
+from mvi_utils import (
     canonical_cell_id,
     env_path,
     index_allc_files,

@@ -19,7 +19,7 @@ import scvi
 import torch
 from scvi.external import METHYLVI
 
-from mvi_13_utils_pipeline import env_path, save_json
+from mvi_utils import env_path, save_json
 
 
 def _validate_clustering_dependencies() -> None:
