@@ -20,12 +20,37 @@ export MVI_REPRO="${MVI_REPRO:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # 当前 MethylVI 项目目录（即 scripts 的上一级目录）。
 export MVI_PROJECT_ROOT="${MVI_PROJECT_ROOT:-$(cd "${MVI_REPRO}/.." && pwd)}"
 
+# 是否启用GRCh38 blacklist区域过滤。正式可复现流程默认启用；只有需要
+# 读取历史未过滤结果时才显式设置 MVI_USE_BLACKLIST=0。
+export MVI_USE_BLACKLIST="${MVI_USE_BLACKLIST:-1}"
+[[ "$MVI_USE_BLACKLIST" == 0 || "$MVI_USE_BLACKLIST" == 1 ]] || {
+    echo "ERROR：MVI_USE_BLACKLIST只能为0或1" >&2
+    return 1 2>/dev/null || exit 1
+}
+
+# 固定使用ENCODE4 GRCh38 exclusion list。MD5来自ENCODE文件页；运行时会复核。
+export MVI_BLACKLIST="${MVI_BLACKLIST:-${MVI_REPRO}/ENCFF356LFX_GRCh38_blacklist.bed.gz}"
+export MVI_BLACKLIST_ACCESSION="${MVI_BLACKLIST_ACCESSION:-ENCFF356LFX}"
+export MVI_BLACKLIST_MD5="${MVI_BLACKLIST_MD5:-393688b4f06c9ce26165d47433dd8c37}"
+export MVI_BLACKLIST_FRACTION="${MVI_BLACKLIST_FRACTION:-0.2}"
+
+# 历史未过滤版本的ALLC/MCDS目录。`blacklist`快捷阶段可复用其中的MCDS；
+# 从头复现时由正式`prepare`在新目录重新生成MCDS。
+export MVI_BASE_ALLCOOLS_OUTPUT="${MVI_BASE_ALLCOOLS_OUTPUT:-${MVI_DATA_ROOT}/methylvi_5kb_300k}"
+export MVI_SOURCE_MCDS="${MVI_SOURCE_MCDS:-${MVI_BASE_ALLCOOLS_OUTPUT}/mcg_5kb.mcds}"
+
 # MethSCAn 上游脚本和流程说明所在目录，仅用于记录数据来源。
 export MVI_METHSCAN_UPSTREAM="${MVI_METHSCAN_UPSTREAM:-/Users/luozhixiong/Library/Mobile Documents/com~apple~CloudDocs/Documents/PHD/脚本/Methscan/01_Upstream}"
 
-# 通过 MethSCAn 300k 细胞 QC 后的 ALLCools 5-kb 输出目录。
-# 与包含全部 58,534 个原始细胞的审计目录 methylvi_5kb 分开，避免混用。
-export MVI_ALLCOOLS_OUTPUT="${MVI_ALLCOOLS_OUTPUT:-${MVI_DATA_ROOT}/methylvi_5kb_300k}"
+# 通过MethSCAn 300k细胞QC后的ALLCools 5-kb输出目录。
+# 启用blacklist后默认切换到独立目录，防止覆盖当前231,648-bin版本。
+if [[ "$MVI_USE_BLACKLIST" == 1 ]]; then
+    export MVI_VARIANT_ID="${MVI_VARIANT_ID:-blacklist_f0p2}"
+    export MVI_ALLCOOLS_OUTPUT="${MVI_ALLCOOLS_OUTPUT:-${MVI_DATA_ROOT}/methylvi_5kb_300k_${MVI_VARIANT_ID}}"
+else
+    export MVI_VARIANT_ID="${MVI_VARIANT_ID:-current_no_blacklist}"
+    export MVI_ALLCOOLS_OUTPUT="${MVI_ALLCOOLS_OUTPUT:-${MVI_BASE_ALLCOOLS_OUTPUT}}"
+fi
 
 # ALLCools 生成并筛选的 5-kb 聚类 H5AD 文件。
 export MVI_H5AD="${MVI_H5AD:-${MVI_ALLCOOLS_OUTPUT}/mcg_5kb.clustered.h5ad}"
@@ -33,7 +58,8 @@ export MVI_H5AD="${MVI_H5AD:-${MVI_ALLCOOLS_OUTPUT}/mcg_5kb.clustered.h5ad}"
 # hg38 canonical chromosome sizes；供 ALLCools generate-dataset 使用。
 export MVI_CHROM_SIZES="${MVI_CHROM_SIZES:-${MVI_REPRO}/hg38.canonical.chrom.sizes}"
 
-# 每个细胞一个 ALLC 软链接的平铺目录，文件名与 H5AD cell ID 匹配。
+# 每个细胞一个ALLC软链接的平铺目录。从头执行`prepare`时在当前profile
+# 输出目录生成；复用旧MCDS的`blacklist`快捷阶段会建立指向旧ALLC目录的链接。
 export MVI_ALLC_DIR="${MVI_ALLC_DIR:-${MVI_ALLCOOLS_OUTPUT}/input_allc}"
 
 # SCANPY 导出的全细胞注释表。公共读取器会将其 sample、group 和
@@ -47,8 +73,12 @@ export MVI_SAMPLE_METADATA="${MVI_SAMPLE_METADATA:-${MVI_REPRO}/01_sample_metada
 # 2. 输出路径
 # ----------------------------------------------------------------------------
 
-# 300k QC 细胞的 MethylVI 项目输出根目录。
-export MVI_ROOT="${MVI_ROOT:-${MVI_DATA_ROOT}/methylVI_results_300k}"
+# 300k QC细胞的MethylVI项目输出根目录；blacklist版本自动隔离。
+if [[ "$MVI_USE_BLACKLIST" == 1 ]]; then
+    export MVI_ROOT="${MVI_ROOT:-${MVI_DATA_ROOT}/methylVI_results_300k_${MVI_VARIANT_ID}}"
+else
+    export MVI_ROOT="${MVI_ROOT:-${MVI_DATA_ROOT}/methylVI_results_300k}"
+fi
 
 # MethylVI 输入 H5MU，包含 mCG.layers['mc'] 和 mCG.layers['cov']。
 export MVI_INPUT="${MVI_INPUT:-${MVI_ROOT}/methylvi_5kbin_input.h5mu}"
@@ -57,7 +87,11 @@ export MVI_INPUT="${MVI_INPUT:-${MVI_ROOT}/methylvi_5kbin_input.h5mu}"
 export MVI_RESULTS="${MVI_RESULTS:-${MVI_ROOT}/results_ir_nr}"
 
 # 所有图像的统一输出目录；与 scripts 并列，不写入数据目录。
-export MVI_FIGURES_DIR="${MVI_FIGURES_DIR:-${MVI_PROJECT_ROOT}/result}"
+if [[ "$MVI_USE_BLACKLIST" == 1 ]]; then
+    export MVI_FIGURES_DIR="${MVI_FIGURES_DIR:-${MVI_PROJECT_ROOT}/result/${MVI_VARIANT_ID}}"
+else
+    export MVI_FIGURES_DIR="${MVI_FIGURES_DIR:-${MVI_PROJECT_ROOT}/result}"
+fi
 
 # 按分析阶段区分校正前、校正后和监督式UMAP图像。
 export MVI_FIGURES_BEFORE_DIR="${MVI_FIGURES_BEFORE_DIR:-${MVI_FIGURES_DIR}/01_before_methylvi}"
@@ -65,7 +99,11 @@ export MVI_FIGURES_AFTER_DIR="${MVI_FIGURES_AFTER_DIR:-${MVI_FIGURES_DIR}/02_aft
 export MVI_FIGURES_SUPERVISED_DIR="${MVI_FIGURES_SUPERVISED_DIR:-${MVI_FIGURES_DIR}/03_supervised_umap}"
 
 # 输入审计 JSON 报告；保留既有文件名以兼容已生成结果。
-export MVI_AUDIT="${MVI_AUDIT:-${MVI_REPRO}/mvi_06_input_audit.json}"
+if [[ "$MVI_USE_BLACKLIST" == 1 ]]; then
+    export MVI_AUDIT="${MVI_AUDIT:-${MVI_ROOT}/input_audit.json}"
+else
+    export MVI_AUDIT="${MVI_AUDIT:-${MVI_REPRO}/mvi_06_input_audit.json}"
+fi
 
 # ----------------------------------------------------------------------------
 # 3. 样本信息和元数据字段
@@ -138,6 +176,10 @@ export MVI_SEED="${MVI_SEED:-0}"
 # 甲基化计数设置：5-kb bin 和 mCG/CGN context。
 export MVI_BIN_SIZE="${MVI_BIN_SIZE:-5000}"
 export MVI_MC_CONTEXT="${MVI_MC_CONTEXT:-CGN}"
+
+# ALLCools 5-kb特征筛选参数。显式配置，避免软件默认值变化。
+export MVI_HYPO_SCORE_CUTOFF="${MVI_HYPO_SCORE_CUTOFF:-0.95}"
+export MVI_HYPO_PERCENT="${MVI_HYPO_PERCENT:-0.5}"
 
 # MethylVI 网络结构：latent 维度、hidden 层维度和 hidden 层数。
 export MVI_N_LATENT="${MVI_N_LATENT:-20}"

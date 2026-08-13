@@ -14,6 +14,7 @@ INPUT=${1:-${MVI_DATA_ROOT:-}}
 OUTPUT=${2:-${MVI_ALLCOOLS_OUTPUT:-}}
 CHROM_SIZES=${3:-${MVI_CHROM_SIZES:-}}
 ALLCOOLS_ENV=${MVI_ALLCOOLS_ENV:-/share/home/rzli/miniconda3/envs/allcools}
+export PATH="$ALLCOOLS_ENV/bin:${PATH}"
 if [[ -x "$ALLCOOLS_ENV/bin/python" ]]; then
     PYTHON_BIN=${PYTHON_BIN:-$ALLCOOLS_ENV/bin/python}
     ALLCOOLS_EXE=${ALLCOOLS_EXE:-$ALLCOOLS_ENV/bin/allcools}
@@ -447,8 +448,24 @@ else
     echo "[$(date)] existing completed MCDS detected; skipping generation"
 fi
 
-"$PYTHON_BIN" "$SCRIPT_DIR/03_cluster_allcools.py" \
-    --mcds "$MCDS" \
-    --output "$OUTPUT" \
+cluster_args=(
+    --mcds "$MCDS"
+    --output "$OUTPUT"
     --threads "$THREADS"
+    --binarize-cutoff "${MVI_HYPO_SCORE_CUTOFF:-0.95}"
+    --hypo-percent "${MVI_HYPO_PERCENT:-0.5}"
+)
+if [[ "${MVI_USE_BLACKLIST:-0}" == 1 ]]; then
+    [[ -s "${MVI_BLACKLIST:-}" ]] || {
+        echo "ERROR: blacklist文件不存在: ${MVI_BLACKLIST:-未设置}" >&2
+        exit 1
+    }
+    cluster_args+=(
+        --blacklist "$MVI_BLACKLIST"
+        --blacklist-accession "${MVI_BLACKLIST_ACCESSION:-ENCFF356LFX}"
+        --blacklist-md5 "${MVI_BLACKLIST_MD5:-}"
+        --blacklist-fraction "${MVI_BLACKLIST_FRACTION:-0.2}"
+    )
+fi
+"$PYTHON_BIN" "$SCRIPT_DIR/03_cluster_allcools.py" "${cluster_args[@]}"
 echo "[$(date)] completed"
