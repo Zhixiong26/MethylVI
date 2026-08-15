@@ -115,13 +115,13 @@ ALLCools count + hypo-score 5-kb MCDS
     ↓
 与yuanpei相同参数的二值化、LSI和ConsensusClustering
     ↓
-6,199个细胞 × 231,648个保留5-kb bins的H5AD
+6,199个细胞 × 230,306、100,206或49,947个保留5-kb bins的H5AD
     ↓
 从6,199个原始ALLC重新聚合整数mc/cov
     ↓
 合并sample、IR/NR和SCANPY cell type注释
     ↓
-构建约1.03 GiB H5MU
+分别构建约1.03、0.49或0.26 GiB H5MU
     ↓
 以sample_id为batch covariate训练MethylVI
     ↓
@@ -134,6 +134,24 @@ cell type、sample、condition绘图
 可选：生成4个target_weight的cell type标签引导UMAP
 ```
 
+### 4.3 当前流程的三个实际参数版本
+
+三个版本均使用同一批6,199个细胞、10个样本（5 IR + 5 NR）、ENCODE
+`ENCFF356LFX` GRCh38 blacklist，blacklist overlap fraction=`0.2`，并从同一
+617,665个初始5-kb bins出发。差别只在低频bin筛选阈值和由此产生的特征数量。
+
+| 版本/profile | `MVI_HYPO_PERCENT` | ALLCools内部阈值 | 最终bins | H5MU | 训练任务与实际停止 |
+|---|---:|---:|---:|---:|---|
+| `blacklist_f0p2` | 0.5 | 非零细胞数 `>30` | 230,306 | 1.03 GiB | `164172`，120 CPU；第78/500 epoch early stopping |
+| `blacklist_f0p2_100k` | 1.169543 | 非零细胞数 `>72` | 100,206 | 0.49 GiB | `164134`，64 CPU；第80/500 epoch early stopping |
+| `blacklist_f0p2_50k` | 2.669785 | 非零细胞数 `>165` | 49,947 | 0.26 GiB | `164166`，96 CPU；第69/500 epoch early stopping |
+
+三个版本均使用：`latent=20`、`hidden=128`、`hidden_layers=1`、最大
+`500 epochs`、`batch_size=32`、`neighbors=15`、Leiden `resolution=1.0`、
+`seed=0`、`likelihood=betabinomial`、`dispersion=region`、CPU训练，且
+`MVI_BATCH_KEY=sample_id`。三个版本的普通及监督式UMAP结果均已生成；230k版本
+的普通UMAP任务为`164173`，监督式UMAP任务为`164174`。
+
 ## 5. 哪些步骤不同（修正版）
 
 | 比较项 | `yuanpei` | `20260810/scripts` | 影响 |
@@ -141,7 +159,7 @@ cell type、sample、condition绘图
 | 完整目标 | ALLCools聚类 + MethylVI donor批次校正 | ALLCools聚类 + MethylVI sample批次校正 | 核心分析目标相同，batch字段语义略有不同 |
 | 原始输入布局 | 上游从单个平铺`*.cov`目录转换ALLC；MethylVI阶段使用10,488个ALLC | 10个嵌套样本目录，优先直接使用原始带TBI的ALLC | 输入组织和上游来源不同，MethylVI都最终读取ALLC |
 | 调度器 | Slurm `sbatch` | 集群`dsub` | 运行环境不同，不改变统计模型 |
-| 线程与内存 | 默认50线程，记录为250 GB | 正式训练32线程、64 GiB | 主要影响速度和调度，不代表模型不同 |
+| 线程与内存 | 默认50线程，记录为250 GB | 230k/100k/50k分别使用120/64/96 CPU，120 GiB | 主要影响速度和调度，不代表模型不同 |
 | 细胞选择/QC | 对10,488个选中细胞、ALLC和donor赋值做输入审计；当前副本未记录MethSCAn 300k provenance | 核验MethSCAn 300k阈值、10份provenance和6,199细胞白名单 | 当前流程的QC来源和可追溯性更明确 |
 | 样本/分组检查 | 验证donor/disease注释和匹配状态 | 强制10样本、5 IR、5 NR | 当前流程额外防止样本遗漏或混入 |
 | cell ID | donor前缀并规范化`-/_` | `sample_id__barcode` | 当前命名可避免跨样本barcode冲突 |
@@ -150,10 +168,10 @@ cell type、sample、condition绘图
 | ALLCools聚类 | LSI + ConsensusClustering | 同一算法和核心参数 | 该阶段本质相同 |
 | 校正前UMAP | ALLCools聚类阶段根据`X_pca`计算；其01脚本只重新着色 | `03_cluster_allcools.py`根据`X_pca`计算；`07_plot_embeddings.py --stage before`只重新着色 | 时机和用途相同 |
 | cell type注释 | 合并cell type、donor和disease注释 | 合并SCANPY cell type、sample和IR/NR注释 | 都用于解释和绘图，不作为核心MethylVI监督标签 |
-| MethylVI输入 | 从ALLC重建整数`mc/cov`并写入H5MU，约14 GB | 从ALLC重建整数`mc/cov`并写入H5MU，约1.03 GiB | 构建原则相同，数据规模不同 |
+| MethylVI输入 | 从ALLC重建整数`mc/cov`并写入H5MU，约14 GB | 从ALLC重建整数`mc/cov`并写入三个独立H5MU（1.03/0.49/0.26 GiB） | 构建原则相同，特征版本不同 |
 | batch key | `donor` | `sample_id` | 都去除个体/样本差异；当前`sample_id`与IR/NR完全绑定，需警惕过校正 |
 | MethylVI训练 | **有**；最大500 epochs、batch size 32、hidden 128×1、early stopping、seed 0 | **有**；同核心参数，明确使用beta-binomial和region dispersion | 两者都训练MethylVI；元培的03源码缺失，不能确认所有内部参数逐项相同 |
-| 实际停止 | epoch 73 | 89条训练记录（epoch 0–88） | 数据和收敛过程不同，不是方法变化 |
+| 实际停止 | epoch 73 | 230k/100k/50k分别为第78/80/69 epoch | 数据和收敛过程不同，不是方法变化 |
 | 校正后latent | 20维donor-corrected latent | 20维`X_methylVI` | 两者都产生20维MethylVI latent |
 | 校正后UMAP | 03训练阶段在MethylVI latent上计算；04/05重新着色 | 09训练阶段在`X_methylVI`上计算；10/11重新着色 | 时机和主要实现相同 |
 | 训练产物 | README记录model、latent、embedding和训练输出 | model、latent、embedding H5AD、history和run summary | 两者都保存训练结果；当前流程的产物命名和验收记录更明确 |
@@ -167,7 +185,7 @@ cell type、sample、condition绘图
 | 参数 | `yuanpei` | 当前流程 | 是否相同 |
 |---|---:|---:|---|
 | cells | 10,488 | 6,199 | 否，数据集不同 |
-| retained 5-kb bins | 272,521 | 231,648 | 否，特征集不同 |
+| retained 5-kb bins | 272,521 | 230,306 / 100,206 / 49,947（三个blacklist profile） | 否，特征集不同 |
 | context | mCG | mCG/CGN | 本质相同 |
 | batch key | `donor` | `sample_id` | 语义相同，字段名不同 |
 | latent维度 | 20 | 20 | 是 |
@@ -175,12 +193,12 @@ cell type、sample、condition绘图
 | hidden层数 | 1 | 1 | 是 |
 | 最大epochs | 500 | 500 | 是 |
 | early stopping | 开启 | 开启 | 是 |
-| 实际停止 | epoch 73 | 89条训练记录，epoch 0–88 | 否，数据和收敛不同 |
+| 实际停止 | epoch 73 | 230k/100k/50k分别为第78/80/69 epoch | 否，数据和收敛不同 |
 | batch size | 32 | 32 | 是 |
 | neighbors | 15 | 15 | 是 |
 | Leiden resolution | 1.0 | 1.0 | 是 |
 | seed | 0 | 0 | 是 |
-| CPU threads | 50 | 32（正式训练） | 否，资源不同 |
+| CPU threads | 50 | 120 / 64 / 96（230k / 100k / 50k训练） | 否，资源不同 |
 
 从参数上看，当前流程明显沿用了`yuanpei`的MethylVI核心设置。不同的停止轮数不是方法变化，而是不同细胞、bins、数据分布和运行实现产生的收敛差异。
 
@@ -324,13 +342,13 @@ scvi-tools==1.3.3
 | 项目设计 | donor + disease | 5 IR + 5 NR |
 | 调度器 | Slurm `sbatch` | `dsub` |
 | 计算节点 | 固定`cu03` | 由dsub调度，本次为node-11 |
-| CPU/内存 | 50 CPU、250 GB | 正式训练32 CPU、64 GiB |
+| CPU/内存 | 50 CPU、250 GB | 230k/100k/50k训练分别为120/64/96 CPU、120 GiB |
 | BLAS线程 | 各变量设为50 | 多进程阶段内部BLAS固定为1 |
 | 原始细胞QC | 复现目录未记录MethSCAn provenance硬检查 | 核验300k QC和10份provenance |
 | 样本数量硬检查 | donor可赋值即可 | 强制10样本、5 IR、5 NR |
 | cell ID | donor前缀，规范化`-/_` | `sample_id__barcode` |
 | 选中细胞 | 10,488 | 6,199 |
-| bins | 272,521 | 231,648 |
+| bins | 272,521 | 230,306 / 100,206 / 49,947 |
 | 注释匹配 | 9,390完整，1,098仅推断donor | 20260810新注释已验证：5,765匹配，434 Unannotated，17个Exclude |
 | batch字段 | donor | sample_id |
 | 生物学字段 | disease | condition（IR/NR） |
@@ -358,6 +376,16 @@ scvi-tools==1.3.3
 这一步使用标签引导可视化，但README明确说它不是核心donor correction分析。当前流程将它作为独立的`supervised`阶段，基于已训练的`X_methylVI`使用cell type标签和0.2、0.5、0.7、0.9四个权重重算UMAP。这些图必须标注为“监督式UMAP”，不应与`06_train_methylvi.py`产生的无监督MethylVI UMAP混淆。
 
 `yuanpei`的`run_supervised_umap.py`源码不在当前副本中，因此只能确认它接收0.2、0.5、0.7、0.9和1.0这些weights，不能证明其他UMAP参数与当前`08_plot_supervised_umap.py`逐项相同。当前脚本已显式固定`n_neighbors=15`、`min_dist=0.5`、`metric=euclidean`、`target_metric=categorical`和`seed=0`。
+
+## 11.1 测序深度着色图
+
+当前流程在每个target weight的supervised UMAP上额外绘制测序深度。深度来自对应版本H5MU的`mCG.layers["cov"]`：
+
+```text
+total_coverage = 所有保留5-kb bins的cov总和
+```
+
+单位是总测序覆盖次数（coverage counts），不是UMAP坐标单位，也不等同于严格的唯一reads数。每个target weight同时输出`log1p(total_coverage)`图和直接显示原始`total_coverage`的绝对值图；colorbar若显示`1e6`，表示刻度乘以10⁶。该图只用于检查测序深度在嵌入空间中的分布，不参与MethylVI训练。由于三个版本保留的bins数量不同，绝对coverage不能直接横向比较。
 
 ## 12. 两边结果能否直接比较
 

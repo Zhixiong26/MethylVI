@@ -21,6 +21,7 @@ bash 09_run_pipeline.sh build
 bash 09_run_pipeline.sh train
 bash 09_run_pipeline.sh plots
 bash 09_run_pipeline.sh supervised
+bash 09_run_pipeline.sh depth
 bash 09_run_pipeline.sh test
 bash 09_run_pipeline.sh all
 ```
@@ -58,6 +59,7 @@ bash 09_run_pipeline.sh blacklist
 | 230k版本CPU训练 | 任务`164172`成功：120 CPU、120 GiB；第78/500个epoch early stopping，78条记录，退出码0 |
 | 230k版本普通UMAP | 任务`164173`成功：生成校正后 sample、condition、cell type 三张PDF |
 | 230k版本supervised UMAP | 任务`164174`成功：生成0.2、0.5、0.7、0.9四组权重，共12张PDF |
+| 三个版本测序深度UMAP | 任务`164175`、`164176`、`164177`成功：230k/100k/50k各生成4张，共12张PDF |
 | blacklist运行前验收 | 2026-08-12通过：ENCFF356LFX MD5/gzip、独立路径、ALLCools、pybedtools和bedtools均正常 |
 | blacklist独立聚类 | 任务`164127`成功：新H5AD为6,199×230,306，8个显著LSI成分，退出码0 |
 | blacklist约10万bin重筛选 | 任务`164130`成功：6,199×100,206 H5AD，9个显著LSI成分，退出码0 |
@@ -74,6 +76,7 @@ bash 09_run_pipeline.sh blacklist
 | 4 | `train` | `06_train_methylvi.py` | H5MU、`sample_id` batch | 模型、20维latent、UMAP、Leiden、训练记录 |
 | 5 | `plots` | `07_plot_embeddings.py --stage all` | ALLCools及MethylVI坐标、当前注释 | 校正前3张、校正后3张PDF |
 | 6 | `supervised` | `08_plot_supervised_umap.py` | 固定MethylVI latent、当前cell type | 4组坐标、12张PDF、H5AD和JSON摘要 |
+| 7 | `depth` | `10_plot_sequencing_depth.py` | 各版本H5MU的`mCG.layers['cov']`及监督式UMAP坐标 | 每个target weight一张log版和一张绝对值版测序深度PDF、深度表和JSON摘要 |
 
 测试不是正式分析步骤。`test`单独运行`tests/test_mvi_utils.py`和`tests/test_methylvi_smoke.py`；后者使用合成数据进行两轮CPU训练。
 
@@ -330,6 +333,16 @@ bash 09_run_pipeline.sh supervised
 
 未注释或`exclude_from_main_analysis=True`的细胞使用`-1`作为未标记目标：仍显示在图中，但标签不会拉近它们。weight越大，cell type标签对二维布局影响越强；这些图是标签引导可视化，不能代替无监督latent证据。
 
+### 4.6 测序深度UMAP
+
+`10_plot_sequencing_depth.py`读取对应版本H5MU的`mCG.layers["cov"]`，计算每个细胞所有保留bins的coverage总和：
+
+```text
+total_coverage = 所有保留bins的cov总和
+```
+
+单位是总测序覆盖次数（coverage counts），不是UMAP坐标单位，也不是严格的唯一reads数。每个target weight输出两张图：`methylvi_supervised_umap_sequencing_depth.pdf`为`log1p(total_coverage)`版本，`methylvi_supervised_umap_sequencing_depth_absolute.pdf`为原始绝对值版本。绝对值图的colorbar若显示`1e6`，表示刻度需要乘以1,000,000。三个版本共输出24张图；不同bin版本的绝对coverage不能直接横向比较。
+
 ## 5. 已验收结果和服务器任务记录
 
 ### 5.1 关键结果
@@ -375,6 +388,9 @@ bash 09_run_pipeline.sh supervised
 | `164172` | 230k版本正式CPU训练；120 CPU、122,880 MB | 成功；3,509秒、峰值9,432 MiB；第78/500个epoch early stopping，78条记录；退出码0 |
 | `164173` | 230k版本普通UMAP；4 CPU、16,384 MB | 成功；生成`02_after_methylvi`下3张PDF；退出码0 |
 | `164174` | 230k版本supervised UMAP；4 CPU、16,384 MB | 成功；生成4个target weight目录、12张PDF；退出码0 |
+| `164175` | 230k版本测序深度UMAP；4 CPU、16,384 MB | 成功；4个target weight目录、4张PDF；退出码0 |
+| `164176` | 100k版本测序深度UMAP；4 CPU、16,384 MB | 成功；4个target weight目录、4张PDF；退出码0 |
+| `164177` | 50k版本测序深度UMAP；4 CPU、16,384 MB | 成功；4个target weight目录、4张PDF；退出码0 |
 
 `164097`的修复是先将`exclude_from_main_analysis`转为Pandas字符串，再填充缺失并解析布尔值。`164094`的模型训练本身成功，错误发生在训练后的Leiden阶段。
 

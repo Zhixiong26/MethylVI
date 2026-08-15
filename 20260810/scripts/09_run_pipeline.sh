@@ -20,7 +20,7 @@ mkdir -p "$HERE/logs" "$MVI_ROOT" "$MVI_RESULTS"
 
 usage() {
     cat <<'EOF'
-用法：bash 09_run_pipeline.sh {prepare|blacklist|verify|build|train|plots|supervised|test|all}
+用法：bash 09_run_pipeline.sh {prepare|blacklist|verify|build|train|plots|supervised|depth|test|all}
 
   prepare      正式从头复现：整理ALLC、生成MCDS、blacklist过滤及5-kb聚类
   blacklist    快捷复用历史MCDS，只重做blacklist过滤及5-kb聚类
@@ -29,6 +29,7 @@ usage() {
   train        训练 MethylVI 并生成 latent、UMAP 和 Leiden 结果
   plots        同时重画校正前和校正后的普通嵌入图
   supervised   生成 target_weight=0.2、0.5、0.7、0.9 的监督式 UMAP
+  depth        在每个监督式UMAP上绘制基于cov总覆盖量的测序深度
   test         运行公共函数单元测试和两轮 CPU smoke test
   all          依次运行 verify、build、train、plots、supervised（不含 prepare/test）
 EOF
@@ -136,6 +137,11 @@ case "$stage" in
       --threads "$MVI_THREADS" \
       2>&1 | tee "$HERE/logs/08_plot_supervised_umap.log"
     ;;
+  depth)
+    activate_methylvi
+    python "$HERE/10_plot_sequencing_depth.py" \
+      2>&1 | tee "$HERE/logs/10_plot_sequencing_depth.log"
+    ;;
   test)
     activate_methylvi
     PYTHONPATH="$HERE${PYTHONPATH:+:$PYTHONPATH}" \
@@ -150,6 +156,7 @@ case "$stage" in
     bash "$0" train
     bash "$0" plots
     bash "$0" supervised
+    bash "$0" depth
     ;;
   *)
     usage
