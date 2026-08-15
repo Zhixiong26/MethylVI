@@ -68,7 +68,7 @@ def plot_before() -> None:
                 x,
                 y,
                 column,
-                figures / f"allcools_original_embedding_{column}.pdf",
+                figures / f"allcools_original_embedding_{column}.png",
                 f"Original ALLCools {name} — {label}",
             )
     finally:
@@ -93,7 +93,7 @@ def plot_after() -> None:
             "UMAP1",
             "UMAP2",
             column,
-            figures / f"methylvi_umap_{column}.pdf",
+            figures / f"methylvi_umap_{column}.png",
             f"MethylVI UMAP — {label}",
         )
 

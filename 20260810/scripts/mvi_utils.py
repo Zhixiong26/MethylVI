@@ -409,5 +409,5 @@ def categorical_embedding_plot(
         ncol=2 if len(categories) > 20 else 1,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(output, bbox_inches="tight")
+    figure.savefig(output, dpi=300, bbox_inches="tight")
     plt.close(figure)

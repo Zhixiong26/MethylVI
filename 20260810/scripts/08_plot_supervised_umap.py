@@ -164,7 +164,7 @@ def main() -> None:
         ):
             if column not in table:
                 raise ValueError(f"MethylVI embedding缺少绘图列: {column}")
-            figure_path = weight_figure_dir / f"methylvi_supervised_umap_{column}.pdf"
+            figure_path = weight_figure_dir / f"methylvi_supervised_umap_{column}.png"
             categorical_embedding_plot(
                 table,
                 "UMAP1",

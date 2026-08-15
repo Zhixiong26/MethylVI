@@ -341,7 +341,7 @@ bash 09_run_pipeline.sh supervised
 total_coverage = 所有保留bins的cov总和
 ```
 
-单位是总测序覆盖次数（coverage counts），不是UMAP坐标单位，也不是严格的唯一reads数。每个target weight输出两张图：`methylvi_supervised_umap_sequencing_depth.pdf`为`log1p(total_coverage)`版本，`methylvi_supervised_umap_sequencing_depth_absolute.pdf`为原始绝对值版本。绝对值图的colorbar若显示`1e6`，表示刻度需要乘以1,000,000。三个版本共输出24张图；不同bin版本的绝对coverage不能直接横向比较。
+单位是总测序覆盖次数（coverage counts），不是UMAP坐标单位，也不是严格的唯一reads数。所有图统一保存为300 dpi PNG。每个target weight输出两张图：`methylvi_supervised_umap_sequencing_depth.png`为`log1p(total_coverage)`版本，`methylvi_supervised_umap_sequencing_depth_absolute.png`为原始绝对值版本。绝对值图的colorbar若显示`1e6`，表示刻度需要乘以1,000,000。三个版本共输出24张图；不同bin版本的绝对coverage不能直接横向比较。
 
 ## 5. 已验收结果和服务器任务记录
 
@@ -405,13 +405,13 @@ total_coverage = 所有保留bins的cov总和
 ```text
 /share/home/rzli/MethylVI/20260810/result/blacklist_f0p2/
 ├── 01_before_methylvi/
-│   ├── allcools_original_embedding_cell_type.pdf
-│   ├── allcools_original_embedding_sample_id.pdf
-│   └── allcools_original_embedding_condition.pdf
+│   ├── allcools_original_embedding_cell_type.png
+│   ├── allcools_original_embedding_sample_id.png
+│   └── allcools_original_embedding_condition.png
 ├── 02_after_methylvi/
-│   ├── methylvi_umap_cell_type.pdf
-│   ├── methylvi_umap_sample_id.pdf
-│   └── methylvi_umap_condition.pdf
+│   ├── methylvi_umap_cell_type.png
+│   ├── methylvi_umap_sample_id.png
+│   └── methylvi_umap_condition.png
 └── 03_supervised_umap/
     ├── target_weight_0p2/
     ├── target_weight_0p5/

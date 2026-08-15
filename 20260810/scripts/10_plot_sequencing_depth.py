@@ -60,7 +60,7 @@ def _plot(table: pd.DataFrame, output: Path, title: str, absolute: bool = False)
     axis.set_ylabel("UMAP2")
     axis.set_title(title)
     fig.tight_layout()
-    fig.savefig(output, bbox_inches="tight")
+    fig.savefig(output, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -88,8 +88,8 @@ def main() -> None:
         if len(table) != len(obs_names):
             raise ValueError(f"target_weight={weight:g}坐标与H5MU细胞不完全匹配")
         weight_root = figure_root / f"target_weight_{tag}"
-        output = weight_root / "methylvi_supervised_umap_sequencing_depth.pdf"
-        absolute_output = weight_root / "methylvi_supervised_umap_sequencing_depth_absolute.pdf"
+        output = weight_root / "methylvi_supervised_umap_sequencing_depth.png"
+        absolute_output = weight_root / "methylvi_supervised_umap_sequencing_depth_absolute.png"
         title = f"MethylVI supervised UMAP — sequencing depth (target_weight={weight:g})"
         _plot(table, output, title)
         _plot(table, absolute_output, f"MethylVI supervised UMAP — absolute sequencing depth (target_weight={weight:g})", absolute=True)
