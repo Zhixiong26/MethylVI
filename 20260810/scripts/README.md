@@ -22,6 +22,7 @@ bash 09_run_pipeline.sh train
 bash 09_run_pipeline.sh plots
 bash 09_run_pipeline.sh supervised
 bash 09_run_pipeline.sh depth
+bash 09_run_pipeline.sh qc-compare
 bash 09_run_pipeline.sh test
 bash 09_run_pipeline.sh all
 ```
@@ -74,9 +75,10 @@ bash 09_run_pipeline.sh blacklist
 | 2 | `verify` | `04_verify_inputs.py` | H5AD、ALLC、样本表、当前注释 | 独立`input_audit.json` |
 | 3 | `build` | `05_build_methylvi_input.py` | 6,199个ALLC、230,306个bins | H5MU、逐细胞检查点、build摘要 |
 | 4 | `train` | `06_train_methylvi.py` | H5MU、`sample_id` batch | 模型、20维latent、UMAP、Leiden、训练记录 |
-| 5 | `plots` | `07_plot_embeddings.py --stage all` | ALLCools及MethylVI坐标、当前注释 | 校正前3张、校正后3张PDF |
-| 6 | `supervised` | `08_plot_supervised_umap.py` | 固定MethylVI latent、当前cell type | 4组坐标、12张PDF、H5AD和JSON摘要 |
-| 7 | `depth` | `10_plot_sequencing_depth.py` | 各版本H5MU的`mCG.layers['cov']`及监督式UMAP坐标 | 每个target weight一张log版和一张绝对值版测序深度PDF、深度表和JSON摘要 |
+| 5 | `plots` | `07_plot_embeddings.py --stage all` | ALLCools及MethylVI坐标、当前注释 | 校正前3张、校正后3张300 dpi PNG |
+| 6 | `supervised` | `08_plot_supervised_umap.py` | 固定MethylVI latent、当前cell type | 4组坐标、12张300 dpi PNG、H5AD和JSON摘要 |
+| 7 | `depth` | `10_plot_sequencing_depth.py` | 各版本H5MU的`mCG.layers['cov']`及监督式UMAP坐标 | 每个target weight一张log版和一张绝对值版300 dpi PNG、深度表和JSON摘要 |
+| 8 | `qc-compare` | `11_compare_qc_cell_sets.py` | 旧版参考结果与新版QC结果 | 在旧版UMAP上标记新版剔除的细胞，并导出精确名单与深度统计 |
 
 测试不是正式分析步骤。`test`单独运行`tests/test_mvi_utils.py`和`tests/test_methylvi_smoke.py`；后者使用合成数据进行两轮CPU训练。
 
@@ -108,7 +110,7 @@ dsub \
 | `06_train_methylvi.py` | 训练MethylVI并生成latent、邻居图、UMAP、Leiden及运行摘要 |
 | `07_plot_embeddings.py` | `--stage before\|after\|all`；动态读取当前注释并生成6张普通图 |
 | `08_plot_supervised_umap.py` | 在固定latent上生成四种`target_weight`的标签引导UMAP |
-| `09_run_pipeline.sh` | `prepare/blacklist/verify/build/train/plots/supervised/test/all`统一入口 |
+| `09_run_pipeline.sh` | `prepare/blacklist/verify/build/train/plots/supervised/depth/qc-compare/test/all`统一入口 |
 | `mvi_utils.py` | ID标准化、元数据/注释合并、区域解析、ALLC聚合、JSON和绘图公共函数 |
 | `requirements.lock.txt` | 正式环境的软件版本记录 |
 | `hg38.canonical.chrom.sizes` | hg38 canonical 24条染色体长度 |
@@ -342,6 +344,24 @@ total_coverage = 所有保留bins的cov总和
 ```
 
 单位是总测序覆盖次数（coverage counts），不是UMAP坐标单位，也不是严格的唯一reads数。所有图统一保存为300 dpi PNG。每个target weight输出两张图：`methylvi_supervised_umap_sequencing_depth.png`为`log1p(total_coverage)`版本，`methylvi_supervised_umap_sequencing_depth_absolute.png`为原始绝对值版本。绝对值图的colorbar若显示`1e6`，表示刻度需要乘以1,000,000。三个版本共输出24张图；不同bin版本的绝对coverage不能直接横向比较。
+
+### 将新版QC剔除的细胞标记回旧版UMAP
+
+`qc-compare`使用细胞ID集合差集，在旧版参考UMAP坐标上标记新版QC剔除的细胞。它不比较两次独立训练后的UMAP数值，也不修改任何已有模型或图片。每个target weight输出：
+
+- log测序深度图，剔除细胞用红色空心圈叠加；
+- 绝对测序深度图，剔除细胞使用相同红色空心圈；
+- 仅显示`retained`/`removed`的二分状态图；
+- 包含坐标、深度和QC状态的表、精确剔除名单及JSON汇总。
+
+6,199细胞参考版与4,819细胞新版的运行示例：
+
+```bash
+MVI_QC_REFERENCE_RESULTS=/share/LCZX_Data/data/allcools/methylVI_results_300k_blacklist_f0p2/results_ir_nr \
+MVI_QC_CURRENT_RESULTS=/share/LCZX_Data/data/allcools/methylVI_results_300k_blacklist_f0p2_4819/results_ir_nr \
+MVI_QC_COMPARISON_DIR=/share/home/rzli/MethylVI/20260810/result/qc_comparison_6199_vs_4819 \
+bash 09_run_pipeline.sh qc-compare
+```
 
 ## 5. 已验收结果和服务器任务记录
 

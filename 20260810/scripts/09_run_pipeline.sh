@@ -20,7 +20,7 @@ mkdir -p "$HERE/logs" "$MVI_ROOT" "$MVI_RESULTS"
 
 usage() {
     cat <<'EOF'
-用法：bash 09_run_pipeline.sh {prepare|blacklist|verify|build|train|plots|supervised|depth|test|all}
+用法：bash 09_run_pipeline.sh {prepare|blacklist|verify|build|train|plots|supervised|depth|qc-compare|test|all}
 
   prepare      正式从头复现：整理ALLC、生成MCDS、blacklist过滤及5-kb聚类
   blacklist    快捷复用历史MCDS，只重做blacklist过滤及5-kb聚类
@@ -30,6 +30,7 @@ usage() {
   plots        同时重画校正前和校正后的普通嵌入图
   supervised   生成 target_weight=0.2、0.5、0.7、0.9 的监督式 UMAP
   depth        在每个监督式UMAP上绘制基于cov总覆盖量的测序深度
+  qc-compare   将新版QC剔除的细胞标记回旧版监督式UMAP
   test         运行公共函数单元测试和两轮 CPU smoke test
   all          依次运行 verify、build、train、plots、supervised（不含 prepare/test）
 EOF
@@ -141,6 +142,11 @@ case "$stage" in
     activate_methylvi
     python "$HERE/10_plot_sequencing_depth.py" \
       2>&1 | tee "$HERE/logs/10_plot_sequencing_depth.log"
+    ;;
+  qc-compare)
+    activate_methylvi
+    python "$HERE/11_compare_qc_cell_sets.py" \
+      2>&1 | tee "$HERE/logs/11_compare_qc_cell_sets.log"
     ;;
   test)
     activate_methylvi
